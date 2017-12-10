@@ -5,7 +5,7 @@ class Track extends Component {
   render() {
     let props = { ...this.props };
 
-    return <div className="ut-track">{props.track.name}</div>;
+    return <div className="ut-track">{props.track.key}</div>;
   }
 }
 

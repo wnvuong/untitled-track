@@ -8,17 +8,17 @@ import Track from './Track';
 class TrackListing extends Component {
   render() {
     let props = { ...this.props };
-    return (
+    return props.tracks && props.tracks.length > 0 ? (
       <Paper>
         <List>
           {props.tracks.map(track => (
-            <ListItem button>
-              <Track key={track.id} track={track} />
+            <ListItem key={track.key} button>
+              <Track track={track} />
             </ListItem>
           ))}
         </List>
       </Paper>
-    );
+    ) : null;
   }
 }
 

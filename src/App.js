@@ -2,35 +2,137 @@ import React, { Component } from 'react';
 import { MuiThemeProvider, createMuiTheme } from 'material-ui/styles';
 import Grid from 'material-ui/Grid';
 import Button from 'material-ui/Button';
+import Input from 'material-ui/Input';
 import './App.css';
+import { jsonToQueryString } from './util.js';
 
 import TrackListing from './TrackListing';
 
 const theme = createMuiTheme();
-const tracks = [
-  {
-    id: 1,
-    name: 'The Less I Know The Better'
-  },
-  {
-    id: 2,
-    name: 'Let It Happen'
-  }
-];
 
 class App extends Component {
+  state = {
+    file: '',
+    tracks: []
+  };
+
+  componentDidMount() {
+    this.getTracks();
+  }
+
+  getTracks = () => {
+    let tracks = [];
+    fetch('http://crtq.s3.amazonaws.com/')
+      .then(response => {
+        if (response.ok) {
+          return response.text();
+        }
+        console.log(response);
+      })
+      .then(rawXml => {
+        let parser = new DOMParser();
+        let xml = parser.parseFromString(rawXml, 'text/xml');
+        let contents = xml.getElementsByTagName('Contents');
+        for (var content of contents) {
+          let key = content.getElementsByTagName('Key')[0].innerHTML;
+          let lastModified = content.getElementsByTagName('LastModified')[0]
+            .innerHTML;
+          let size = content.getElementsByTagName('Size')[0].innerHTML;
+          tracks.push({ key, lastModified, size });
+        }
+        return tracks;
+      })
+      .then(tracks => {
+        this.setState({ tracks });
+      });
+  };
+
+  handleChange = name => event => {
+    this.setState({
+      [name]: event.target.value
+    });
+  };
+
+  uploadTrack = e => {
+    e.preventDefault();
+    let form = e.target;
+    let filename = form['file'].files[0].name;
+    let content_type = form['file'].files[0].type;
+
+    fetch(`/api/s3credentials?${jsonToQueryString({ filename, content_type })}`)
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Network response was not ok.');
+      })
+      .then(json => {
+        let formData = new FormData();
+        for (var key in json.params) {
+          if (json.params.hasOwnProperty(key)) {
+            formData.set(key, json.params[key]);
+          }
+        }
+        formData.set('file', form['file'].files[0]);
+        return fetch('https://crtq.s3.amazonaws.com/', {
+          method: 'POST',
+          body: formData
+        });
+      })
+      .then(response => {
+        if (response.ok) {
+          this.setState({ file: '' });
+          return this.getTracks();
+        }
+        throw new Error('Network response was not ok.');
+      })
+      .catch(error => {
+        console.error(
+          'There has been a problem with your fetch operation: ',
+          error.message
+        );
+      });
+  };
+
   render() {
     return (
       <MuiThemeProvider theme={theme}>
         <div className="ut-container">
           <Grid container justify="space-between" alignItems="center">
-            <h1>Untitled Track</h1>
-            <Button raised color="primary">
-              Upload
-            </Button>
+            <h1>CRTQ</h1>
+            <div>
+              <form onSubmit={this.uploadTrack}>
+                <Input
+                  onChange={this.handleChange('file')}
+                  style={{ display: 'none' }}
+                  id="file"
+                  type="file"
+                  name="file"
+                  value={this.state.file}
+                />
+                <label htmlFor="file">
+                  <Button raised component="span" color="accent">
+                    {this.state.file !== ''
+                      ? this.state.file.split('\\').pop()
+                      : `Add Track`}
+                  </Button>
+                </label>
+                {this.state.file !== '' && (
+                  <Button
+                    style={{ marginLeft: '5px' }}
+                    type="submit"
+                    raised
+                    color="primary"
+                    onClick={this.onUploadClick}
+                  >
+                    Upload
+                  </Button>
+                )}
+              </form>
+            </div>
           </Grid>
           <Grid container direction="column" alignItems="stretch">
-            <TrackListing tracks={tracks} />
+            <TrackListing tracks={this.state.tracks} />
           </Grid>
         </div>
       </MuiThemeProvider>
