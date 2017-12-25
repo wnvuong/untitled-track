@@ -20,14 +20,46 @@ class App extends Component {
     this.getTracks();
   }
 
+  addTrack = () => {
+    fetch('/api/tracks', {
+      method: 'POST',
+      headers: new Headers({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ name: 'name', key: 'key' })
+    })
+      .then(response => {
+        return response.json();
+      })
+      .then(json => {
+        console.log(json);
+      });
+  };
+
   getTracks = () => {
+    fetch('/api/tracks')
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Network response was not ok.');
+      })
+      .then(json => {
+        this.setState({ tracks: json.tracks });
+      })
+      .catch(error => {
+        console.error(
+          'There has been a problem with your fetch operation: ',
+          error.message
+        );
+      });
+  };
+
+  getBucketItems = () => {
     let tracks = [];
     fetch('http://crtq.s3.amazonaws.com/')
       .then(response => {
         if (response.ok) {
           return response.text();
         }
-        console.log(response);
       })
       .then(rawXml => {
         let parser = new DOMParser();
@@ -44,6 +76,12 @@ class App extends Component {
       })
       .then(tracks => {
         this.setState({ tracks });
+      })
+      .catch(error => {
+        console.error(
+          'There has been a problem with your fetch operation: ',
+          error.message
+        );
       });
   };
 
@@ -82,7 +120,9 @@ class App extends Component {
       .then(response => {
         if (response.ok) {
           this.setState({ file: '' });
-          return this.getTracks();
+          this.addTrack();
+          this.getTracks();
+          return;
         }
         throw new Error('Network response was not ok.');
       })

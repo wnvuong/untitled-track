@@ -12,7 +12,7 @@ class TrackListing extends Component {
       <Paper>
         <List>
           {props.tracks.map(track => (
-            <ListItem key={track.key} button>
+            <ListItem key={track._id} button>
               <Track track={track} />
             </ListItem>
           ))}
