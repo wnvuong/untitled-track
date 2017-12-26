@@ -1,19 +1,19 @@
-import React, { Component } from 'react';
-import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
-import Paper from 'material-ui/Paper';
-import './TrackListing.css';
+import React, { Component } from "react";
+import List, { ListItem, ListItemIcon, ListItemText } from "material-ui/List";
+import Paper from "material-ui/Paper";
+import "./TrackListing.css";
 
-import Track from './Track';
+import Track from "./Track";
 
 class TrackListing extends Component {
   render() {
     let props = { ...this.props };
-    return props.tracks && props.tracks.length > 0 ? (
+    return props.projects && props.projects.length > 0 ? (
       <Paper>
         <List>
-          {props.tracks.map(track => (
-            <ListItem key={track._id} button>
-              <Track track={track} />
+          {props.projects.map(project => (
+            <ListItem key={project._id} button>
+              <Track track={project} />
             </ListItem>
           ))}
         </List>

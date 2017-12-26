@@ -1,9 +1,32 @@
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 .ut-container {
   max-width: 768px;
   margin: 0 auto;
   padding: 0 12px;
+}
+
+button {
+  transition: all 0.5s;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+a,
+a:active,
+a:hover,
+a:visited {
+  text-decoration: none;
+}
+
+.form-label {
+  /* font-weight: 500; */
 }
