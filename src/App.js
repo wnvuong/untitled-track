@@ -1,25 +1,30 @@
-import React, { Component } from "react";
-import { Link, Route } from "react-router-dom";
-import { MuiThemeProvider, createMuiTheme } from "material-ui/styles";
-import Grid from "material-ui/Grid";
-import Button from "material-ui/Button";
-import Input from "material-ui/Input";
-import MenuItem from "material-ui/Menu/MenuItem";
-import TextField from "material-ui/TextField";
-import Dialog, { DialogTitle } from "material-ui/Dialog";
-import "./App.css";
-import { jsonToQueryString, getJson, postJson } from "./util.js";
+import React, { Component } from 'react';
+import { Link, Route } from 'react-router-dom';
+import { MuiThemeProvider, createMuiTheme } from 'material-ui/styles';
+import Grid from 'material-ui/Grid';
+import Button from 'material-ui/Button';
+import Input from 'material-ui/Input';
+import MenuItem from 'material-ui/Menu/MenuItem';
+import TextField from 'material-ui/TextField';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
+} from 'material-ui/Dialog';
+import './App.css';
+import { jsonToQueryString, getJson, postJson } from './util.js';
 
-import TrackListing from "./TrackListing";
+import TrackListing from './TrackListing';
 
 const theme = createMuiTheme();
 
 class App extends Component {
   state = {
-    file: "",
+    file: '',
     projects: [],
-    project: null,
-    newProjectName: null,
+    project: '',
+    newProjectName: '',
     showNewProjectModal: false
   };
 
@@ -28,24 +33,24 @@ class App extends Component {
   }
 
   addTrack = () => {
-    postJson("/api/projects", { name: "name", key: "key" }).then(json => {
+    postJson('/api/projects', { name: 'name', key: 'key' }).then(json => {
       console.log(json);
     });
   };
 
   getProjects = () => {
-    getJson("/api/projects").then(json => {
+    getJson('/api/projects').then(json => {
       this.setState({ projects: json.projects });
     });
   };
 
   addNewProject = projectName => {
-    postJson("/api/projects", { projectName }).then(res => console.log(res));
+    postJson('/api/projects', { projectName }).then(res => console.log(res));
   };
 
   getBucketItems = () => {
     let tracks = [];
-    fetch("http://crtq.s3.amazonaws.com/")
+    fetch('http://crtq.s3.amazonaws.com/')
       .then(response => {
         if (response.ok) {
           return response.text();
@@ -53,13 +58,13 @@ class App extends Component {
       })
       .then(rawXml => {
         let parser = new DOMParser();
-        let xml = parser.parseFromString(rawXml, "text/xml");
-        let contents = xml.getElementsByTagName("Contents");
+        let xml = parser.parseFromString(rawXml, 'text/xml');
+        let contents = xml.getElementsByTagName('Contents');
         for (var content of contents) {
-          let key = content.getElementsByTagName("Key")[0].innerHTML;
-          let lastModified = content.getElementsByTagName("LastModified")[0]
+          let key = content.getElementsByTagName('Key')[0].innerHTML;
+          let lastModified = content.getElementsByTagName('LastModified')[0]
             .innerHTML;
-          let size = content.getElementsByTagName("Size")[0].innerHTML;
+          let size = content.getElementsByTagName('Size')[0].innerHTML;
           tracks.push({ key, lastModified, size });
         }
         return tracks;
@@ -69,7 +74,7 @@ class App extends Component {
       })
       .catch(error => {
         console.error(
-          "There has been a problem with your fetch operation: ",
+          'There has been a problem with your fetch operation: ',
           error.message
         );
       });
@@ -85,8 +90,8 @@ class App extends Component {
   uploadTrack = e => {
     e.preventDefault();
     let form = e.target;
-    let filename = form["file"].files[0].name;
-    let content_type = form["file"].files[0].type;
+    let filename = form['file'].files[0].name;
+    let content_type = form['file'].files[0].type;
 
     getJson(
       `/api/s3credentials?${jsonToQueryString({ filename, content_type })}`
@@ -98,31 +103,27 @@ class App extends Component {
             formData.set(key, json.params[key]);
           }
         }
-        formData.set("file", form["file"].files[0]);
-        return fetch("https://crtq.s3.amazonaws.com/", {
-          method: "POST",
+        formData.set('file', form['file'].files[0]);
+        return fetch('https://crtq.s3.amazonaws.com/', {
+          method: 'POST',
           body: formData
         });
       })
       .then(response => {
         if (response.ok) {
-          this.setState({ file: "" });
+          this.setState({ file: '' });
           this.addTrack();
           this.getTracks();
           return;
         }
-        throw new Error("Network response was not ok.");
+        throw new Error('Network response was not ok.');
       })
       .catch(error => {
         console.error(
-          "There has been a problem with your fetch operation: ",
+          'There has been a problem with your fetch operation: ',
           error.message
         );
       });
-  };
-
-  handleNewProjectModalClose = value => {
-    this.setState({ showNewProjectModal: false });
   };
 
   render() {
@@ -158,11 +159,46 @@ class App extends Component {
             path="/addtrack"
             render={() => (
               <div>
+                <Dialog
+                  open={this.state.showNewProjectModal}
+                  onClose={() => this.setState({ showNewProjectModal: false })}
+                >
+                  <DialogTitle>Add New Project</DialogTitle>
+                  <DialogContent style={{ width: '300px' }}>
+                    <TextField
+                      autoFocus
+                      margin="dense"
+                      id="newProjectName"
+                      label="New Project Name"
+                      onChange={this.handleChange('newProjectName')}
+                      fullWidth
+                    />
+                  </DialogContent>
+                  <DialogActions>
+                    <Button
+                      onClick={() =>
+                        this.setState({ showNewProjectModal: false })
+                      }
+                      color="primary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        this.addNewProject(this.state.newProjectName);
+                        this.setState({ showNewProjectModal: false });
+                      }}
+                      color="primary"
+                    >
+                      Submit
+                    </Button>
+                  </DialogActions>
+                </Dialog>
                 <form
                   onSubmit={this.uploadTrack}
-                  style={{ margin: "20px -8px" }}
+                  style={{ margin: '20px -8px' }}
                 >
-                  <Grid container alignItems="flex-end">
+                  <Grid container alignItems="center">
                     <Grid item xs>
                       <TextField
                         id="project"
@@ -170,7 +206,7 @@ class App extends Component {
                         select
                         fullWidth
                         value={this.state.project}
-                        onChange={this.handleChange("project")}
+                        onChange={this.handleChange('project')}
                       >
                         {this.state.projects &&
                           this.state.projects.map(option => (
@@ -221,13 +257,6 @@ class App extends Component {
               </div>
             )}
           />
-          <Dialog
-            open={this.state.showNewProjectModal}
-            onClose={this.handleNewProjectModalClose}
-          >
-            <DialogTitle>Name new project</DialogTitle>
-            <Button onClick={this.handleNewProjectModalClose}>Submit</Button>
-          </Dialog>
         </div>
       </MuiThemeProvider>
     );
