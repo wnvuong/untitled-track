@@ -1,9 +1,9 @@
-import React, { Component } from "react";
-import List, { ListItem, ListItemIcon, ListItemText } from "material-ui/List";
-import Paper from "material-ui/Paper";
-import "./TrackListing.css";
+import React, { Component } from 'react';
+import List, { ListItem } from 'material-ui/List';
+import Paper from 'material-ui/Paper';
+import './TrackListing.css';
 
-import Track from "./Track";
+import Track from './Track';
 
 class TrackListing extends Component {
   render() {
