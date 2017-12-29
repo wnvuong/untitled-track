@@ -3,6 +3,7 @@ import Grid from 'material-ui/Grid';
 import TextField from 'material-ui/TextField';
 import Button from 'material-ui/Button';
 import MenuItem from 'material-ui/Menu/MenuItem';
+import { green, grey } from 'material-ui/colors';
 
 import { jsonToQueryString, getJson, postJson } from './util.js';
 import AddProjectFormDialog from './AddProjectFormDialog';
@@ -10,7 +11,9 @@ import AddProjectFormDialog from './AddProjectFormDialog';
 class AddTrackForm extends Component {
   state = {
     showNewProjectModal: false,
+    file: '',
     project: '',
+    changes: '',
     projects: []
   };
 
@@ -18,8 +21,11 @@ class AddTrackForm extends Component {
     this.getProjects();
   }
 
-  uploadTrack = e => {
+  addTrack = e => {
     e.preventDefault();
+    if (this.state.project === '') {
+      alert('A project must be selected.');
+    }
     let form = e.target;
     let filename = form['file'].files[0].name;
     let content_type = form['file'].files[0].type;
@@ -42,12 +48,26 @@ class AddTrackForm extends Component {
       })
       .then(response => {
         if (response.ok) {
-          this.setState({ file: '' });
-          this.addTrack();
-          this.getTracks();
-          return;
+          return response.text();
         }
         throw new Error('Network response was not ok.');
+      })
+      .then(rawXml => {
+        let parser = new DOMParser();
+        let xml = parser.parseFromString(rawXml, 'text/xml');
+        let postResponse = xml.getElementsByTagName('PostResponse');
+        let key = postResponse[0].getElementsByTagName('Key')[0].innerHTML;
+
+        const { project, changes } = this.state;
+        this.setState({ file: '', changes: '', project: '' });
+        return postJson('/api/tracks', {
+          projectId: project,
+          changes: changes,
+          s3key: key
+        });
+      })
+      .then(response => {
+        console.log(response);
       })
       .catch(error => {
         console.error(
@@ -78,18 +98,19 @@ class AddTrackForm extends Component {
     this.setState({
       [name]: event.target.value
     });
-    console.log(name, event.target.value);
   };
 
   render() {
+    console.log(this.state);
     return (
       <div>
-        <form onSubmit={this.uploadTrack}>
-          <Grid container alignItems="center">
+        <form onSubmit={this.addTrack}>
+          <Grid container alignItems="flex-end" style={gridItemStyle}>
             <Grid item xs>
               <TextField
                 id="project"
                 label="Choose project"
+                required
                 select
                 fullWidth
                 value={this.state.project}
@@ -112,32 +133,51 @@ class AddTrackForm extends Component {
               </Button>
             </Grid>
           </Grid>
-          {/* <Input
-          onChange={this.handleChange("file")}
-          style={{ display: "none" }}
-          id="file"
-          type="file"
-          name="file"
-          value={this.state.file}
-        />
-        <label htmlFor="file">
-          <Button raised component="span" color="accent">
-            {this.state.file !== ""
-              ? this.state.file.split("\\").pop()
-              : `Add Track`}
-          </Button>
-        </label>
-        {this.state.file !== "" && (
-          <Button
-            style={{ marginLeft: "5px" }}
-            type="submit"
-            raised
-            color="primary"
-            onClick={this.onUploadClick}
+          <br />
+          <Grid container alignItems="flex-end" style={gridItemStyle}>
+            <Grid item xs>
+              <TextField
+                id="changes"
+                label="Summary of changes"
+                required
+                fullWidth
+                value={this.state.changes}
+                onChange={this.handleChange('changes')}
+              />
+            </Grid>
+          </Grid>
+          <br />
+          <Grid container alignItems="flex-end" style={gridItemStyle}>
+            <Grid item xs>
+              <TextField
+                fullWidth
+                onChange={this.handleChange('file')}
+                required
+                id="file"
+                type="file"
+                name="file"
+                value={this.state.file}
+              />
+            </Grid>
+          </Grid>
+          <br />
+          <Grid
+            container
+            alignItems="flex-end"
+            justify="flex-end"
+            style={gridItemStyle}
           >
-            Upload
-          </Button>
-        )} */}
+            <Grid item>
+              <Button>Cancel</Button>
+              <Button
+                raised
+                style={{ background: green[500], color: grey[50] }}
+                type="submit"
+              >
+                Submit
+              </Button>
+            </Grid>
+          </Grid>
         </form>
         <AddProjectFormDialog
           open={this.state.showNewProjectModal}
@@ -150,3 +190,7 @@ class AddTrackForm extends Component {
 }
 
 export default AddTrackForm;
+
+const gridItemStyle = {
+  height: '68px'
+};
